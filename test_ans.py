@@ -13,8 +13,12 @@ def run_command(cmd):
         program = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
         timecost = time.time() - timecost
         output, err = program.communicate(timeout=1200)
-        output = set(output.decode('utf-8').strip().replace('{', '').replace('}', '').split(','))
-        err = err.decode('gbk')
+        output = output.decode('utf-8').strip().replace('{', '').replace('}', '')
+        if output == 'no ans':
+            output = set()
+        else:
+            output = set(output.split(','))
+        err = err.decode('utf-8')
         status = 'COMPLETED'
     except subprocess.TimeoutExpired:
         status = 'TIMEOUT'
@@ -43,7 +47,7 @@ def main():
             continue
         print(f'{file}: ')
         filename = os.path.join(input_dir, file)
-        cmd = f'timeout 600 ./CL4AF/build/main.exe {filename}'
+        cmd = f'timeout 600 ./CL4AF/build/main {filename}'
         status, output, timecost = run_command(cmd)
         if status != 'COMPLETED':
             print(f'wrong answer\n{status}~')
