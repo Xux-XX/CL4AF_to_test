@@ -15,7 +15,7 @@ def run_command(cmd):
         output, err = program.communicate(timeout=1200)
         output = output.decode('utf-8').strip().replace('{', '').replace('}', '')
         if output == 'no ans':
-            output = set()
+            output = 'no ans'
         else:
             output = set(output.split(','))
         err = err.decode('utf-8')
@@ -54,7 +54,7 @@ def main():
             continue
         ans_list = load_ans(file)
 
-        flag = False
+        flag = True if len(ans_list) == 0 and output == 'no ans' else False
         for ans in ans_list:
             if set(ans) == set(output):
                 flag = True
