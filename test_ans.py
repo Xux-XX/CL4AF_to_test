@@ -1,0 +1,69 @@
+import os
+import re
+import subprocess
+import time
+
+
+def run_command(cmd):
+    output = ''
+    timecost = 0
+    try:
+        timecost = time.time()
+        program = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+        timecost = time.time() - timecost
+        output, err = program.communicate(timeout=1200)
+        output = set(output.decode('utf-8').strip().replace('{', '').replace('}', '').split(','))
+        err = err.decode('gbk')
+        status = 'COMPLETED'
+    except subprocess.TimeoutExpired as e:
+        status = 'TIMEOUT'
+    except subprocess.CalledProcessError as e:
+        status = 'CRASH'
+    except Exception as e:
+        status = str(e)
+    return status, output, timecost
+
+
+def load_ans(name):
+    name = os.path.splitext(name)[0]
+    name = f'{name}.apx-EE-ST.out'
+    path = os.path.join('./data/2019/reference-results', name)
+
+    with open(path, 'r', encoding='utf-8') as f:
+        ans = f.read()
+    ans = ans.split('\n')[0].strip()
+    ans = re.sub(r'(\w+)', r'"\1"', ans)
+    ans = eval(ans)
+    return ans
+
+
+def main():
+    input_dir = './data/2019/instances'
+    for file in os.listdir(input_dir):
+        if not file.endswith('.tgf'):
+            continue
+        print(f'{file}: ')
+        filename = os.path.join(input_dir, file)
+        cmd = f'timeout 600 ./CL4AF/cmake-build-debug/main.exe {filename}'
+        status, output, timecost = run_command(cmd)
+        if status != 'COMPLETED':
+            print(f'wrong answer\n{status}~')
+            continue
+        ans_list = load_ans(file)
+
+        flag = False
+        for ans in ans_list:
+            if set(ans) == set(output):
+                flag = True
+                break
+        if flag:
+            print('accept')
+            print(output)
+        else:
+            print('wrong answer')
+            print(f'output: {output}')
+            print(f'answer: {ans_list}')
+
+
+if __name__ == '__main__':
+    main()
