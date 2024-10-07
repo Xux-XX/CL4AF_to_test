@@ -43,7 +43,7 @@ def main():
             continue
         print(f'{file}: ')
         filename = os.path.join(input_dir, file)
-        cmd = f'timeout 600 ./CL4AF/cmake-build-debug/main.exe {filename}'
+        cmd = f'timeout 600 ./CL4AF/build/main.exe {filename}'
         status, output, timecost = run_command(cmd)
         if status != 'COMPLETED':
             print(f'wrong answer\n{status}~')
