@@ -5,6 +5,7 @@ import time
 
 
 def run_command(cmd):
+    status = '?'
     output = ''
     timecost = 0
     try:
@@ -15,12 +16,10 @@ def run_command(cmd):
         output = set(output.decode('utf-8').strip().replace('{', '').replace('}', '').split(','))
         err = err.decode('gbk')
         status = 'COMPLETED'
-    except subprocess.TimeoutExpired as e:
+    except subprocess.TimeoutExpired:
         status = 'TIMEOUT'
-    except subprocess.CalledProcessError as e:
+    except subprocess.CalledProcessError:
         status = 'CRASH'
-    except Exception as e:
-        status = str(e)
     return status, output, timecost
 
 
