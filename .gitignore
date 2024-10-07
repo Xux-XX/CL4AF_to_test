@@ -7,3 +7,5 @@
 
 ### extra ###
 data/
+log/
+analyze.py
