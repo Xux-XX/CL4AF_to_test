@@ -98,7 +98,7 @@ int Solver::IN_propagate(int arg) {
         if (lab == LAB_BLANK || lab == LAB_MUST_OUT) {
             set_label(child, LAB_OUT, Clause::of(arg, LAB_IN));
         }
-        else if(lab == LAB_MUST_IN){
+        else if(lab == LAB_MUST_IN || lab == LAB_IN){
             conflict = {child, arg};
             return CONFLICT;
         }
@@ -199,7 +199,7 @@ std::tuple<Clause, int, int, int> Solver::analyze() {
         conflict.pop_front();
         for (int i = 0; i < reasons[arg].size(); ++i) {
             auto pre = reasons[arg].get_arg(i);
-            if (vis[pre])continue;
+            if (vis[pre]) continue;
             if (depth[pre] != current_level){
                 learnt_clause.add(pre, get_label(pre));
                 backtrack_level = std::max(backtrack_level, depth[pre]);
