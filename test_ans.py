@@ -12,7 +12,7 @@ def run_command(cmd):
         timecost = time.time()
         program = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
         timecost = time.time() - timecost
-        output, err = program.communicate(timeout=1200)
+        output, err = program.communicate(timeout=600)
         output = output.decode('utf-8').strip().replace('{', '').replace('}', '')
         if output == 'no ans':
             output = 'no ans'
@@ -47,7 +47,7 @@ def main():
             continue
         print(f'{file}: ')
         filename = os.path.join(input_dir, file)
-        cmd = f'timeout 600 ./CL4AF/build/main {filename}'
+        cmd = f'timeout 601 ./CL4AF/build/main {filename}'
         status, output, timecost = run_command(cmd)
         if status != 'COMPLETED':
             print(f'wrong answer\n{status}~')
