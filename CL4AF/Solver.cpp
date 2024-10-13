@@ -9,6 +9,7 @@ void Solver::solve() {
     init_label();
     int decide_res = 0;
     while (decide_res != NO_BLANK_ARG){
+        propagate:
 #ifdef DEBUG
         std::string msg = "now: ";
         for(auto arg:args){
@@ -16,13 +17,12 @@ void Solver::solve() {
         }
         LOG(msg + "\n");
 #endif
-        propagate:
         int status = propagate();
         if (status != NO_CONFLICT){
             auto [learnt_clause, backtrack_level, conflict_status, need_modify_arg] = analyze();
             if (conflict_status == CONFLICT_ON_BASE) break;
             auto arg = need_modify_arg >> 1;
-            auto lab = need_modify_arg&1 ? LAB_MUST_OUT : LAB_MUST_IN;
+            auto lab = need_modify_arg&1 ? LAB_OUT : LAB_IN;
 #ifdef DEBUG
             msg = "";
             for(int i=0;i<learnt_clause.size();i++){
@@ -72,12 +72,6 @@ int Solver::propagate() {
             case LAB_OUT:
                 status = OUT_propagate(arg);
                 break;
-            case LAB_MUST_IN:
-                status = MUST_IN_propagate(arg);
-                break;
-            case LAB_MUST_OUT:
-                status = MUST_OUT_propagate(arg);
-                break;
             default:
                 assert(false);
         }
@@ -105,32 +99,24 @@ int Solver::get_label(int arg) {
 }
 
 int Solver::IN_propagate(int arg) {
-    // in攻击的标记为out
-    // 攻击in的标记为must_out
-    // 若遇到must_in则产生冲突
     for(auto child:attack[arg]){
         auto lab = get_label(child);
-        if (lab == LAB_BLANK || lab == LAB_MUST_OUT) {
+        if (lab == LAB_BLANK) {
             set_label(child, LAB_OUT, Clause::of(arg, LAB_IN));
         }
-        else if(lab == LAB_MUST_IN || lab == LAB_IN){
+        else if( lab == LAB_IN){
             conflict = {child, arg};
-#ifdef DEBUG
-            LOG("IN_PROPAGATE CONFLICT");
-#endif
             return CONFLICT;
         }
     }
+
     for (auto parent:attack_by[arg]) {
         auto lab = get_label(parent);
         if (lab == LAB_BLANK){
-            set_label(parent, LAB_MUST_OUT, Clause::of(arg, LAB_IN));
+            set_label(parent, LAB_OUT, Clause::of(arg, LAB_IN));
         }
-        else if(lab == LAB_MUST_IN || lab == LAB_IN){
+        else if(lab == LAB_IN){
             conflict = {parent, arg};
-#ifdef DEBUG
-            LOG("IN_PROPAGATE CONFLICT");
-#endif
             return CONFLICT;
         }
     }
@@ -140,15 +126,18 @@ int Solver::IN_propagate(int arg) {
 }
 
 int Solver::OUT_propagate(int arg) {
+    if(!is_legal_must_out(arg)){
+        conflict.clear();
+        conflict.insert(conflict.end(), attack_by[arg].begin(), attack_by[arg].end());
+        conflict.push_back(arg);
+        return CONFLICT;
+    }
+
     for (auto child: attack[arg]){
-        int lab = get_label(child);
-        if(lab == LAB_MUST_OUT && !is_legal_must_out(child)){
+        if(get_label(child) == LAB_OUT && !is_legal_must_out(child)){
             conflict.clear();
             conflict.insert(conflict.end(), attack_by[child].begin(), attack_by[child].end());
-            conflict .push_back(child);
-#ifdef DEBUG
-            LOG("OUT_PROPAGATE CONFLICT");
-#endif
+            conflict.push_back(child);
             return CONFLICT;
         }
     }
@@ -203,22 +192,27 @@ std::tuple<Clause, int, int, int> Solver::analyze() {
     }
     if (conflict.empty() || current_level == 0) return {Clause(), -1, CONFLICT_ON_BASE, -1};
 
-    while (conflict.size() != 1){
+    int last_arg = -1;
+    while (!conflict.empty()){
         auto arg = conflict.front();
         conflict.pop_front();
+        if (reasons[arg].size() == 0){
+            last_arg = arg;
+            break;
+        }
         for (int i = 0; i < reasons[arg].size(); ++i) {
             auto pre = reasons[arg].get_arg(i);
             if (vis[pre]) continue;
+            vis[pre] = true;
             if (depth[pre] != current_level){
                 learnt_clause.add(pre, get_label(pre));
                 backtrack_level = std::max(backtrack_level, depth[pre]);
             }
             else conflict.push_back(pre);
-
-            vis[pre] = true;
         }
     }
-    auto arg = conflict.front();
+    auto arg = last_arg;
+    assert(arg != -1);
     learnt_clause.add(arg, get_label(arg));
 
     return {learnt_clause, backtrack_level, CONFLICT, arg<<1|(get_label(arg)==LAB_IN)};
@@ -249,8 +243,8 @@ void Solver::read_TGF(const std::string &filename) {
         attack[id1].push_back(id2);
         attack_by[id2].push_back(id1);
         if (id1 == id2) {
-            label[id1] = LAB_MUST_OUT;
-            trail.emplace_back(id1, LAB_MUST_OUT, 0, Clause());
+            label[id1] = LAB_OUT;
+            trail.emplace_back(id1, label[id1], 0, Clause());
         }
     }
 }
