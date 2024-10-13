@@ -2,12 +2,14 @@
 // Created by xux on 2024/9/11.
 //
 
+#include <cassert>
 #include "Clause.h"
 
 Clause Clause::of(int arg, int label) {
+    assert(label != LAB_BLANK);
     Clause res;
     auto& v = res.lit;
-    v.assign(1, arg<<1|(label==LAB_IN));
+    v.assign(1, arg<<1|(label==LAB_IN || label == LAB_MUST_IN));
     return res;
 }
 
@@ -19,7 +21,8 @@ Clause Clause::of(std::vector<int>&& a) {
 }
 
 void Clause::add(int arg, int label) {
-    lit.push_back(arg<<1|(label==LAB_IN));
+    assert(label != LAB_BLANK);
+    lit.push_back(arg<<1|(label==LAB_IN || label == LAB_MUST_IN));
 }
 
 Clause Clause::exclude(int arg) {
