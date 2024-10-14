@@ -13,7 +13,7 @@ def run_command(cmd):
         program = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
         timecost = time.time() - timecost
         output, err = program.communicate(timeout=600)
-        output = output.decode('utf-8').strip().replace('{', '').replace('}', '')
+        output = output.decode('utf-8').strip().replace('[', '').replace(']', '')
         if output == 'no ans':
             output = 'no ans'
         else:
@@ -56,7 +56,7 @@ def main():
 
         flag = True if len(ans_list) == 0 and output == 'no ans' else False
         for ans in ans_list:
-            if set(ans) == set(output):
+            if set(ans) == output:
                 flag = True
                 break
         if flag:
