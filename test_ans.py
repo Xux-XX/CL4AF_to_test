@@ -50,7 +50,7 @@ def main():
         cmd = f'timeout 601 ./CL4AF/build/main {filename}'
         status, output, timecost = run_command(cmd)
         if status != 'COMPLETED':
-            print(f'wrong answer\n{status}~')
+            print(f'{status}~')
             continue
         ans_list = load_ans(file)
 
