@@ -1,3 +1,4 @@
+import argparse
 import os
 import re
 import subprocess
@@ -27,10 +28,10 @@ def run_command(cmd):
     return status, output, timecost
 
 
-def load_ans(name):
+def load_ans(result_dir, name):
     name = os.path.splitext(name)[0]
     name = f'{name}.apx-EE-ST.out'
-    path = os.path.join('./data/2019/reference-results', name)
+    path = os.path.join(result_dir, name)
 
     with open(path, 'r', encoding='utf-8') as f:
         ans = f.read()
@@ -40,9 +41,17 @@ def load_ans(name):
     return ans
 
 
+def read_input_dir():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-d', '--data-dir', type=str, help='directory of the test data')
+    args = parser.parse_args()
+
+    return args.data_dir
+
+
 def main():
-    input_dir = './data/2019/instances'
-    for file in os.listdir(input_dir):
+    input_dir = read_input_dir()
+    for file in os.listdir(os.path.join(input_dir, 'instances')):
         if not file.endswith('.tgf'):
             continue
         print(f'{file}: ')
@@ -52,7 +61,7 @@ def main():
         if status != 'COMPLETED':
             print(f'{status}~')
             continue
-        ans_list = load_ans(file)
+        ans_list = load_ans(input_dir, file)
 
         flag = True if len(ans_list) == 0 and output == 'no ans' else False
         for ans in ans_list:
