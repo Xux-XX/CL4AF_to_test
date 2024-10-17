@@ -120,7 +120,7 @@ int Solver::IN_propagate(int arg) {
             return CONFLICT;
         }
     }
-    // TODO: 通过学习到的子句进行传播
+    // TODO: 閫氳繃瀛︿範鍒扮殑瀛愬彞杩涜浼犳挱
 
     return NO_CONFLICT;
 }
@@ -176,7 +176,7 @@ std::tuple<Clause, int, int, int> Solver::analyze() {
     Clause learnt_clause;
     int backtrack_level = 0;
 
-    // 删除链表中不属于当前层的争议，只保留当前层方便后面进行bfs
+    // 鍒犻櫎閾捐〃涓笉灞炰簬褰撳墠灞傜殑浜夎锛屽彧淇濈暀褰撳墠灞傛柟渚垮悗闈㈣繘琛宐fs
     auto it = conflict.begin();
     while (it != conflict.end()){
         auto arg = *it;
@@ -222,7 +222,7 @@ std::tuple<Clause, int, int, int> Solver::analyze() {
 void Solver::read_TGF(const std::string &filename) {
     std::ifstream fin(filename);
     if(!fin){
-        std::cout<<"无法打开文件: "<<filename<<std::endl;
+        std::cout<<"鏃犳硶鎵撳紑鏂囦欢: "<<filename<<std::endl;
         exit(1);
     }
     std::string arg1, arg2;
@@ -236,7 +236,7 @@ void Solver::read_TGF(const std::string &filename) {
     while (fin>>arg1>>arg2){
         if(argument2id.find(arg1) == argument2id.end()
         || argument2id.find(arg2) == argument2id.end()){
-            std::cout<<filename<<"文件格式错误"<<std::endl;
+            std::cout<<filename<<"鏂囦欢鏍煎紡閿欒"<<std::endl;
             exit(1);
         }
         int id1 = argument2id[arg1],
