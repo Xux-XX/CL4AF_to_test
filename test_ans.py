@@ -55,7 +55,7 @@ def main():
         if not file.endswith('.tgf'):
             continue
         print(f'{file}: ')
-        filename = os.path.join(input_dir, file)
+        filename = os.path.join(input_dir, 'instances', file)
         cmd = f'timeout 601 ./CL4AF/build/main {filename}'
         status, output, timecost = run_command(cmd)
         if status != 'COMPLETED':
