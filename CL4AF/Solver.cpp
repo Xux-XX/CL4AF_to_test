@@ -197,8 +197,9 @@ std::tuple<Clause, int, int, int> Solver::analyze() {
         auto arg = conflict.front();
         conflict.pop_front();
         if (reasons[arg].size() == 0){
-            last_arg = arg;
-            break;
+            if(last_arg == -1 || depth[last_arg] < depth[arg]){
+                last_arg = arg;
+            }
         }
         for (int i = 0; i < reasons[arg].size(); ++i) {
             auto pre = reasons[arg].get_arg(i);
@@ -355,3 +356,50 @@ char Solver::label2char(int lab) {
     }
 }
 
+void Solver::read_file(const std::string &filename) {
+    if (filename.ends_with(".af")) {
+        read_AF(filename);
+    }
+    else if(filename.ends_with(".tgf")) {
+        read_TGF(filename);
+    }
+    else {
+        std::cout<<"illegal file format"<<std::endl;
+        exit(1);
+    }
+}
+
+void Solver::read_AF(const std::string &filename) {
+    std::ifstream fin(filename);
+    if (!fin){
+        std::cout<<"can not open "<<filename<<std::endl;
+        exit(1);
+    }
+    std::string arg1, arg2;
+    std::vector<int>self_attack;
+    int arg_id = 0;
+    while (fin>>arg1){
+        fin>>arg2;
+        if (arg1 == "#"){
+            args.push_back(arg_id);
+            id2argument.push_back(arg2);
+            argument2id[arg2] = arg_id++;
+        }
+        else{
+            assert(argument2id.find(arg1) != argument2id.end() && argument2id.find(arg2) != argument2id.end());
+            int id1 = argument2id[arg1],
+                id2 = argument2id[arg2];
+            if (id1 == id2){
+                self_attack.push_back(id1);
+                continue;
+            }
+            attack[id1].push_back(id2);
+            attack_by[id2].push_back(id1);
+        }
+    }
+    alloc_memory(args.size());
+    for(auto arg:self_attack){
+        label[arg] = LAB_OUT;
+        trail.emplace_back(arg, label[arg], 0, Clause());
+    }
+}

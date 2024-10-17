@@ -67,8 +67,11 @@ private:
     static char label2char(int lab);
 
     void print_ans();
-public:
+
     void read_TGF(const std::string& filename);
+    void read_AF(const std::string& filename);
+public:
+    void read_file(const std::string& filename);
     void solve();
 };
 
