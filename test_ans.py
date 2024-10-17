@@ -31,7 +31,7 @@ def run_command(cmd):
 def load_ans(result_dir, name):
     name = os.path.splitext(name)[0]
     name = f'{name}.apx-EE-ST.out'
-    path = os.path.join(result_dir, name)
+    path = os.path.join(result_dir, 'reference-results', name)
 
     with open(path, 'r', encoding='utf-8') as f:
         ans = f.read()
