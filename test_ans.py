@@ -1,4 +1,5 @@
 import argparse
+import json
 import os
 import re
 import subprocess
@@ -10,9 +11,9 @@ def run_command(cmd):
     output = ''
     timecost = 0
     try:
-        timecost = time.time()
+        timecost = time.perf_counter()
         program = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-        timecost = time.time() - timecost
+        timecost = time.perf_counter() - timecost
         output, err = program.communicate(timeout=600)
         output = output.decode('utf-8').strip().replace('[', '').replace(']', '')
         if output == 'no ans':
@@ -25,7 +26,7 @@ def run_command(cmd):
         status = 'TIMEOUT'
     except subprocess.CalledProcessError:
         status = 'CRASH'
-    return status, output, timecost
+    return status, output, round(timecost * 1000)
 
 
 def load_ans(result_dir, name):
@@ -51,30 +52,37 @@ def read_input_dir():
 
 def main():
     input_dir = read_input_dir()
+    print('[')
     for file in os.listdir(os.path.join(input_dir, 'instances')):
         if not file.endswith('.tgf'):
             continue
-        print(f'{file}: ')
         filename = os.path.join(input_dir, 'instances', file)
         cmd = f'timeout 601 ./CL4AF/build/main {filename}'
         status, output, timecost = run_command(cmd)
-        if status != 'COMPLETED':
-            print(f'{status}~')
-            continue
         ans_list = load_ans(input_dir, file)
+        record = dict(
+            file=filename,
+            status='?',
+            timecost=f'{timecost} ms',
+            output=output,
+            answer_list=ans_list
+        )
 
-        flag = True if len(ans_list) == 0 and output == 'no ans' else False
-        for ans in ans_list:
-            if set(ans) == output:
-                flag = True
-                break
-        if flag:
-            print('accept')
-            print(output)
+        if status != 'COMPLETED':
+            record['status'] = status
         else:
-            print('wrong answer')
-            print(f'output: {output}')
-            print(f'answer: {ans_list}')
+            flag = True if len(ans_list) == 0 and output == 'no ans' else False
+            for record in ans_list:
+                if set(record) == output:
+                    flag = True
+                    break
+            if flag:
+                record['status'] = 'ACCEPT'
+            else:
+                record['status'] = "WRONG_ANSWER"
+        print(json.dumps(record, ensure_ascii=False, indent=4))
+    print(']')
+    print('(-_-)zzz')
 
 
 if __name__ == '__main__':
