@@ -50,6 +50,7 @@ def read_input_dir():
 
 
 def main():
+    is_first = True
     input_dir = read_input_dir()
     print('[')
     for file in os.listdir(os.path.join(input_dir, 'instances')):
@@ -63,8 +64,8 @@ def main():
             file=filename,
             status='?',
             timecost=f'{timecost} ms',
-            output=output,
-            answer_list=ans_list
+            output='',
+            answer_list=''
         )
 
         if status != 'COMPLETED':
@@ -79,6 +80,11 @@ def main():
                 record['status'] = 'ACCEPT'
             else:
                 record['status'] = "WRONG_ANSWER"
+        if is_first:
+            print(',')
+            is_first = False
+        record['output'] = output
+        record['answer_list'] = ans_list
         print(json.dumps(record, ensure_ascii=False, indent=4))
     print(']')
     print('(-_-)zzz')
