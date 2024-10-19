@@ -80,9 +80,10 @@ def main():
                 record['status'] = 'ACCEPT'
             else:
                 record['status'] = "WRONG_ANSWER"
-        if is_first:
+
+        if not is_first:
             print(',')
-            is_first = False
+        is_first = False
         record['output'] = output
         record['answer_list'] = ans_list
         print(json.dumps(record, ensure_ascii=False, indent=4))
