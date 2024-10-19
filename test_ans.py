@@ -19,7 +19,7 @@ def run_command(cmd):
         if output == 'no ans':
             output = 'no ans'
         else:
-            output = set(output.split(','))
+            output = list(output.split(','))
         status = 'COMPLETED'
     except subprocess.TimeoutExpired:
         status = 'TIMEOUT'
@@ -72,7 +72,7 @@ def main():
         else:
             flag = True if len(ans_list) == 0 and output == 'no ans' else False
             for ans in ans_list:
-                if set(ans) == output:
+                if set(ans) == set(output):
                     flag = True
                     break
             if flag:
