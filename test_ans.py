@@ -13,8 +13,8 @@ def run_command(cmd):
     try:
         timecost = time.perf_counter()
         program = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-        timecost = time.perf_counter() - timecost
         output, err = program.communicate(timeout=600)
+        timecost = time.perf_counter() - timecost
         output = output.decode('utf-8').strip().replace('[', '').replace(']', '')
         if output == 'no ans':
             output = 'no ans'
