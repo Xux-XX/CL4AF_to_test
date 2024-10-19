@@ -78,14 +78,16 @@ def main():
                     break
             if flag:
                 record['status'] = 'ACCEPT'
+                record['output'] = output
+                record['answer_list'] = ans_list
             else:
                 record['status'] = "WRONG_ANSWER"
+                record['output'] = output
+                record['answer_list'] = ans_list
 
         if not is_first:
             print(',')
         is_first = False
-        record['output'] = output
-        record['answer_list'] = ans_list
         print(json.dumps(record, ensure_ascii=False, indent=4))
     print(']')
     print('(-_-)zzz')
