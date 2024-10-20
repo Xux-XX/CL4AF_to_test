@@ -11,10 +11,10 @@ def run_command(cmd):
     output = ''
     timecost = 0
     try:
-        timecost = time.perf_counter()
+        timecost = time.time()
         program = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
         output, err = program.communicate(timeout=600)
-        timecost = time.perf_counter() - timecost
+        timecost = time.time() - timecost
         output = output.decode('utf-8').strip().replace('[', '').replace(']', '')
         if output == 'no ans':
             output = 'no ans'
