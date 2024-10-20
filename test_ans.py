@@ -14,7 +14,6 @@ def run_command(cmd):
         timecost = time.time()
         program = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
         output, err = program.communicate(timeout=600)
-        timecost = time.time() - timecost
         output = output.decode('utf-8').strip().replace('[', '').replace(']', '')
         if output == 'no ans':
             output = 'no ans'
@@ -25,6 +24,7 @@ def run_command(cmd):
         status = 'TIMEOUT'
     except subprocess.CalledProcessError:
         status = 'CRASH'
+    timecost = time.time() - timecost
     return status, output, round(timecost * 1000)
 
 
@@ -94,4 +94,8 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    # main()
+    a = time.time()
+    time.sleep(6)
+    a = time.time() - a
+    print(f'{round(a * 1000)}ms')
