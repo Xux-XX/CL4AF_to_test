@@ -94,8 +94,4 @@ def main():
 
 
 if __name__ == '__main__':
-    # main()
-    a = time.time()
-    time.sleep(6)
-    a = time.time() - a
-    print(f'{round(a * 1000)}ms')
+    main()
