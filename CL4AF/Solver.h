@@ -24,6 +24,7 @@
 #include <iostream>
 #include <memory>
 #include <queue>
+#include <unordered_set>
 
 #include "Heap.h"
 #include "Clause.h"
@@ -73,6 +74,7 @@ private:
 public:
     void read_file(const std::string& filename);
     void solve();
+    bool self_check();
 };
 
 

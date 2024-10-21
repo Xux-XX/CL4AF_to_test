@@ -377,6 +377,7 @@ void Solver::read_AF(const std::string &filename) {
     }
     std::string arg1, arg2;
     std::vector<int>self_attack;
+    std::vector<std::pair<int,int>> temp_attack;
     int arg_id = 0;
     while (fin>>arg1){
         fin>>arg2;
@@ -393,13 +394,33 @@ void Solver::read_AF(const std::string &filename) {
                 self_attack.push_back(id1);
                 continue;
             }
-            attack[id1].push_back(id2);
-            attack_by[id2].push_back(id1);
+            temp_attack.emplace_back(id1, id2);
         }
     }
     alloc_memory(args.size());
+    for(auto [id1, id2]: temp_attack){
+        attack[id1].push_back(id2);
+        attack_by[id2].push_back(id1);
+    }
     for(auto arg:self_attack){
         label[arg] = LAB_OUT;
         trail.emplace_back(arg, label[arg], 0, Clause());
     }
+}
+
+bool Solver::self_check() {
+    std::unordered_set<int> out_args1, out_args2;
+    for(int i=0;i<arg_number;i++){
+        if (get_label(i) == LAB_OUT) {
+            out_args1.insert(i);
+        }
+    }
+    for(int i=0;i<arg_number;i++){
+        if (get_label(i) == LAB_IN) {
+            for(auto arg:attack[i]){
+                out_args2.insert(arg);
+            }
+        }
+    }
+    return out_args1 == out_args2;
 }
