@@ -7,18 +7,24 @@
 #define CL4AF_CLAUSE_H
 
 #include <vector>
+#include <list>
 #include "label_lib.h"
+#include "Bitset.h"
 
 class Clause {
 private:
     std::vector<int> lit;
+    Bitset *in = nullptr;
+    Bitset *out = nullptr;
 public:
     static Clause of(int arg, int label);
-    static Clause of(std::vector<int>&& a);
     Clause exclude(int arg);
     int get_arg(int index);
     int get_sign(int index);
     void add(int arg, int label);
+    Bitset& get_in(int arg_number);
+    Bitset& get_out(int arg_number);
+    std::list<int> collect_arg_as_list();
 
     int size(){return (int)lit.size();}
     auto begin(){return lit.begin();}

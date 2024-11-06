@@ -36,7 +36,8 @@ void Solver::solve() {
 #ifdef DEBUG
             LOG("modify_arg: " + id2argument[arg] + "\t" + label2char(get_label(arg)) + "->" + label2char(lab) + "\n");
 #endif
-            set_label(arg, lab, learnt_clause.exclude(arg));
+            set_infer(arg, lab, learnt_clause.exclude(arg));
+            add_clause(std::move(learnt_clause));
             goto propagate;
         }
         decide_res = decide();
@@ -53,7 +54,7 @@ int Solver::decide() {
     if (arguments_to_label->empty()) return NO_BLANK_ARG;
     current_level++;
     auto arg = arguments_to_label->top();
-    set_label(arg, LAB_IN, DECISION);
+    set_infer(arg, LAB_IN, DECISION);
 #ifdef DEBUG
     LOG("decide: " + id2argument[arg]);
 #endif
@@ -75,12 +76,13 @@ int Solver::propagate() {
             default:
                 assert(false);
         }
+        if (status != CONFLICT) status = clause_propagate();
         if (status == CONFLICT) return CONFLICT;
     }
     return NO_CONFLICT;
 }
 
-void Solver::set_label(int arg, int lab, Clause&& reason) {
+void Solver::set_infer(int arg, int lab, Clause&& reason) {
 #ifdef DEBUG
     for (int i = 0; i < reason.size(); ++i) {
         auto a = reason.get_arg(i);
@@ -89,20 +91,20 @@ void Solver::set_label(int arg, int lab, Clause&& reason) {
 #endif
     trail.emplace_back(arg, get_label(arg),depth[arg], reasons[arg]);
     if (get_label(arg) == LAB_BLANK) arguments_to_label->remove(arg);
-    label[arg] = lab;
+    set_label(arg, lab);
     reasons[arg] = reason;
     depth[arg] = current_level;
 }
 
 int Solver::get_label(int arg) {
-    return label[arg];
+    return label_map[((out->get(arg)<<1) | in->get(arg))];
 }
 
 int Solver::IN_propagate(int arg) {
     for(auto child:attack[arg]){
         auto lab = get_label(child);
         if (lab == LAB_BLANK) {
-            set_label(child, LAB_OUT, Clause::of(arg, LAB_IN));
+            set_infer(child, LAB_OUT, Clause::of(arg, LAB_IN));
         }
         else if( lab == LAB_IN){
             conflict = {child, arg};
@@ -113,7 +115,7 @@ int Solver::IN_propagate(int arg) {
     for (auto parent:attack_by[arg]) {
         auto lab = get_label(parent);
         if (lab == LAB_BLANK){
-            set_label(parent, LAB_OUT, Clause::of(arg, LAB_IN));
+            set_infer(parent, LAB_OUT, Clause::of(arg, LAB_IN));
         }
         else if(lab == LAB_IN){
             conflict = {parent, arg};
@@ -142,24 +144,6 @@ int Solver::OUT_propagate(int arg) {
         }
     }
     return NO_CONFLICT;
-}
-
-int Solver::MUST_OUT_propagate(int arg) {
-    if(!is_legal_must_out(arg)){
-        conflict.clear();
-        conflict.insert(conflict.end(), attack_by[arg].begin(), attack_by[arg].end());
-        conflict.push_back(arg);
-#ifdef DEBUG
-        LOG("MUST_OUT_PROPAGATE CONFLICT");
-#endif
-        return CONFLICT;
-    }
-    return NO_CONFLICT;
-}
-
-int Solver::MUST_IN_propagate(int arg) {
-    label[arg] = LAB_IN;
-    return IN_propagate(arg);
 }
 
 std::tuple<Clause, int, int, int> Solver::analyze() {
@@ -244,8 +228,8 @@ void Solver::read_TGF(const std::string &filename) {
         attack[id1].push_back(id2);
         attack_by[id2].push_back(id1);
         if (id1 == id2) {
-            label[id1] = LAB_OUT;
-            trail.emplace_back(id1, label[id1], 0, Clause());
+            set_label(id1, LAB_OUT);
+            trail.emplace_back(id1, get_label(id1), 0, Clause());
         }
     }
 }
@@ -263,7 +247,7 @@ void Solver::backtrack(int backtrack_level) {
         msg += "\t" + id2argument[arg] + ":" + label2char(get_label(arg)) + " -> " + label2char(lab) + "\n";
 #endif
         trail.pop_back();
-        label[arg] = lab;
+        set_label(arg, lab);
         depth[arg] = dep;
         reasons[arg] = std::move(reason);
         if (lab == LAB_BLANK) arguments_to_label->insert(hval(arg), arg);
@@ -278,7 +262,8 @@ void Solver::backtrack(int backtrack_level) {
 void Solver::alloc_memory(size_t size) {
     propagated = current_level = 0;
     arg_number = (int)size;
-    label.assign(arg_number, LAB_BLANK);
+    in = new Bitset(arg_number);
+    out = new Bitset(arg_number);
     depth.assign(arg_number, 0);
     reasons.assign(arg_number, {});
     attack.assign(arg_number, {});
@@ -403,8 +388,8 @@ void Solver::read_AF(const std::string &filename) {
         attack_by[id2].push_back(id1);
     }
     for(auto arg:self_attack){
-        label[arg] = LAB_OUT;
-        trail.emplace_back(arg, label[arg], 0, Clause());
+        set_label(arg, LAB_OUT);
+        trail.emplace_back(arg, get_label(arg), 0, Clause());
     }
 }
 
@@ -423,4 +408,55 @@ bool Solver::self_check() {
         }
     }
     return out_args1 == out_args2;
+}
+
+void Solver::add_clause(Clause &&clause) {
+    clause_DB.push_back(clause);
+}
+
+int Solver::clause_propagate() {
+    for(auto clause: clause_DB){
+        auto &clause_in = clause.get_in(arg_number),
+             &clause_out = clause.get_out(arg_number),
+             clause_labeled = clause_in | clause_out,
+             labeled = *in | *out;
+
+        auto labeled_count = clause_labeled.count() - (clause_labeled & labeled).count();
+        if (labeled_count > 1) continue;
+        else if(labeled_count == 1) {
+            if ((clause_in & *in).count() + (clause_out & *out).count() != 0 ) continue;
+            auto arg = (clause_labeled ^ (clause_labeled & labeled)).lowbit(),
+                 lab = clause_in.get(arg) ? LAB_OUT : LAB_IN;
+            set_infer(arg, lab, clause.exclude(arg));
+        }
+        else if(labeled_count == 0) {
+            auto diff_out = clause_in & *out,
+                 diff_in = clause_out & *in;
+            if (diff_in.count() + diff_out.count() > 0) continue;
+            conflict = clause.collect_arg_as_list();
+            return CONFLICT;
+        }
+    }
+    return NO_CONFLICT;
+}
+
+void Solver::set_label(int arg, int lab) {
+#ifdef DEBUG
+    std::string msg("set label: ");
+    msg += id2argument[arg] + " " + label2char(get_label(arg)) + " -> " + label2char(lab);
+    LOG(msg);
+#endif
+    if (lab == LAB_IN){
+        in->set(arg);
+        out->unset(arg);
+    }
+    else if(lab == LAB_OUT){
+        in->unset(arg);
+        out->set(arg);
+    }
+    else if(lab == LAB_BLANK){
+        in->unset(arg);
+        out->unset(arg);
+    }
+    else assert(false);
 }

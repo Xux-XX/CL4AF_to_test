@@ -9,6 +9,8 @@ add_library(lib
         Solver.cpp
         Heap.cpp
         log.h
+        Bitset.cpp
+        Bitset.h
 )
 add_executable(main main.cpp)
 target_link_libraries(main lib)

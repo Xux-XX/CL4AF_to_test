@@ -29,31 +29,36 @@
 #include "Heap.h"
 #include "Clause.h"
 #include "log.h"
+#include "Bitset.h"
 
 class Solver {
 private:
+    constexpr static int    label_map[] = {LAB_BLANK, LAB_IN, LAB_OUT};
+
+
     int                 propagated,             // 已传播争议的位置
                         arg_number,             // 争议个数,
                         current_level;          // 记录当前层次
-    std::vector<int>    label,                  // 记录争议的标签
-                        next_label,             // 记录下一个标签是什么,用于decide中打标签
-                        args,                   // 争议集
+    std::vector<int>    args,                   // 争议集
                         depth;                  // 争议所在层次
+    Bitset              *in,
+                        *out;                   // 争议的标签
     std::list<int>      conflict;               // 冲突争议集
     std::vector<Clause> clause_DB;              // 存储学习子句
     std::vector<Clause> reasons;                 // 争议被赋值的原因
     std::vector<std::vector<int>>           attack,                // 攻击关系
                                             attack_by;             // 被攻击争议集
-    std::shared_ptr<Heap>              arguments_to_label;     // 标签为blank的争议
+    std::shared_ptr<Heap>                   arguments_to_label;     // 标签为blank的争议
     std::vector<std::string>                id2argument;    // 将int转为string类型
     std::unordered_map<std::string, int>    argument2id;    // 将string转为int类型
     std::vector<std::tuple<int,int,int,Clause>> trail;          // 记录用于回溯的信息{arg, label, depth, reason}
 
 
-//    void add_clause(Clause &clause);
+    void add_clause(Clause &&clause);
     bool is_legal_must_out(int arg);
     static double hval(int arg);
-    void set_label(int arg, int lab, Clause&& reason);
+    void set_infer(int arg, int lab, Clause&& reason);
+    void set_label(int arg, int lab);
     int get_label(int arg);
     void alloc_memory(size_t size);
     int decide();
@@ -62,6 +67,7 @@ private:
     int propagate();
     int IN_propagate(int arg);
     int OUT_propagate(int arg);
+    int clause_propagate();
     int MUST_OUT_propagate(int arg);
     int MUST_IN_propagate(int arg);
     void init_label();

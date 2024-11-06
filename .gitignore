@@ -10,3 +10,4 @@ data/
 log/
 analyze.py
 temp.py
+test_AF.py
