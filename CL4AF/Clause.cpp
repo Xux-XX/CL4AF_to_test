@@ -34,28 +34,24 @@ int Clause::get_sign(int index) {
     return lit[index]&1 ? LAB_IN : LAB_OUT;
 }
 
-Bitset &Clause::get_out(int arg_number) {
-    if (out == nullptr){
-        out = new Bitset(arg_number);
-        for(int i=0;i<size();i++){
-            auto arg = get_arg(i),
-                 lab = get_sign(i);
-            if (lab == LAB_OUT) out->set(arg);
-        }
+Bitset Clause::get_out(int arg_number) {
+    Bitset res(arg_number);
+    for(int i=0;i<size();i++){
+        auto arg = get_arg(i),
+             lab = get_sign(i);
+        if (lab == LAB_OUT) res.set(arg);
     }
-    return *out;
+    return res;
 }
 
-Bitset &Clause::get_in(int arg_number) {
-    if (in == nullptr){
-        in = new Bitset(arg_number);
-        for(int i=0;i<size();i++){
-            auto arg = get_arg(i),
-                 lab = get_sign(i);
-            if (lab == LAB_IN) in->set(arg);
-        }
+Bitset Clause::get_in(int arg_number) {
+    Bitset res(arg_number);
+    for(int i=0;i<size();i++){
+        auto arg = get_arg(i),
+             lab = get_sign(i);
+        if (lab == LAB_IN) res.set(arg);
     }
-    return *in;
+    return res;
 }
 
 std::list<int> Clause::collect_arg_as_list() {

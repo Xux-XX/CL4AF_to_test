@@ -22,8 +22,8 @@ public:
     int get_arg(int index);
     int get_sign(int index);
     void add(int arg, int label);
-    Bitset& get_in(int arg_number);
-    Bitset& get_out(int arg_number);
+    Bitset get_in(int arg_number);
+    Bitset get_out(int arg_number);
     std::list<int> collect_arg_as_list();
 
     int size(){return (int)lit.size();}
