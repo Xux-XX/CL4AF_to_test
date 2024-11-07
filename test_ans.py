@@ -15,11 +15,14 @@ def run_command(cmd):
         program = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
         output, err = program.communicate(timeout=600)
         output = output.decode('utf-8').strip().replace('[', '').replace(']', '')
-        if output == 'no ans':
+        if program.returncode != 0:
+            status = 'NON_ZERO_EXIT_CODE'
+        elif output == 'no ans':
+            status = 'COMPLETED'
             output = 'no ans'
         else:
             output = list(output.split(','))
-        status = 'COMPLETED'
+            status = 'COMPLETED'
     except subprocess.TimeoutExpired:
         status = 'TIMEOUT'
     except subprocess.CalledProcessError:
