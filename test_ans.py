@@ -16,7 +16,7 @@ def run_command(cmd):
         output, err = program.communicate(timeout=600)
         output = output.decode('utf-8').strip().replace('[', '').replace(']', '')
         if program.returncode != 0:
-            status = 'NON_ZERO_EXIT_CODE'
+            status = f'NON_ZERO_EXIT_CODE ({program.returncode})'
         elif output == 'no ans':
             status = 'COMPLETED'
             output = 'no ans'
@@ -46,7 +46,7 @@ def load_ans(result_dir, name):
 
 def read_input_dir():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-d', '--data-dir', type=str, help='directory of the test data')
+    parser.add_argument('-d', '--data-dir',default="./data/2019", type=str, help='directory of the test data')
     args = parser.parse_args()
 
     return args.data_dir
@@ -60,7 +60,7 @@ def main():
         if not file.endswith('.tgf'):
             continue
         filename = os.path.join(input_dir, 'instances', file)
-        cmd = f'timeout 601 ./CL4AF/build/main {filename}'
+        cmd = f'cd ./CL4AF/build && cmake .. && make && cd ../../ && timeout 601 ./CL4AF/build/main {filename}'
         status, output, timecost = run_command(cmd)
         ans_list = load_ans(input_dir, file)
         record = dict(
