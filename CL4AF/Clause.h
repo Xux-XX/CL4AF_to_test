@@ -17,6 +17,10 @@ private:
     Bitset *in = nullptr;
     Bitset *out = nullptr;
 public:
+    // 默认构造函数
+    Clause() = default;
+    // 拷贝构造函数
+    Clause(const Clause& other): lit(other.lit) {}
     static Clause of(int arg, int label);
     Clause exclude(int arg);
     int get_arg(int index);

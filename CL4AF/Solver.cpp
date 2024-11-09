@@ -101,6 +101,9 @@ int Solver::get_label(int arg) {
 }
 
 int Solver::IN_propagate(int arg) {
+#ifdef DEBUG
+    LOG("***** IN_propagate *****");
+#endif
     for(auto child:attack[arg]){
         auto lab = get_label(child);
         if (lab == LAB_BLANK) {
@@ -122,16 +125,23 @@ int Solver::IN_propagate(int arg) {
             return CONFLICT;
         }
     }
-    // TODO: 通过学习到的子句进行传播
-
+#ifdef DEBUG
+    LOG("***** IN_propagate end *****\n");
+#endif
     return NO_CONFLICT;
 }
 
 int Solver::OUT_propagate(int arg) {
+#ifdef DEBUG
+    LOG("***** OUT_propagate *****");
+#endif
     if(!is_legal_must_out(arg)){
         conflict.clear();
         conflict.insert(conflict.end(), attack_by[arg].begin(), attack_by[arg].end());
         conflict.push_back(arg);
+#ifdef DEBUG
+        LOG("***** OUT_propagate conflict1 *****\n");
+#endif
         return CONFLICT;
     }
 
@@ -140,9 +150,15 @@ int Solver::OUT_propagate(int arg) {
             conflict.clear();
             conflict.insert(conflict.end(), attack_by[child].begin(), attack_by[child].end());
             conflict.push_back(child);
+#ifdef DEBUG
+            LOG("***** OUT_propagate conflict2 *****\n");
+#endif
             return CONFLICT;
         }
     }
+#ifdef DEBUG
+    LOG("***** OUT_propagate end *****\n");
+#endif
     return NO_CONFLICT;
 }
 
@@ -175,15 +191,12 @@ std::tuple<Clause, int, int, int> Solver::analyze() {
         }
     }
     if (conflict.empty() || current_level == 0) return {Clause(), -1, CONFLICT_ON_BASE, -1};
-
     int last_arg = -1;
     while (!conflict.empty()){
         auto arg = conflict.front();
         conflict.pop_front();
-        if (reasons[arg].size() == 0){
-            if(last_arg == -1 || depth[last_arg] < depth[arg]){
-                last_arg = arg;
-            }
+        if (reasons[arg].size() == 0 && current_level == depth[arg]){
+            last_arg = arg;
         }
         for (int i = 0; i < reasons[arg].size(); ++i) {
             auto pre = reasons[arg].get_arg(i);
@@ -206,7 +219,7 @@ std::tuple<Clause, int, int, int> Solver::analyze() {
 void Solver::read_TGF(const std::string &filename) {
     std::ifstream fin(filename);
     if(!fin){
-        std::cout<<"无法打开文件: "<<filename<<std::endl;
+        std::cout<<"can not open: "<<filename<<std::endl;
         exit(1);
     }
     std::string arg1, arg2;
@@ -220,7 +233,7 @@ void Solver::read_TGF(const std::string &filename) {
     while (fin>>arg1>>arg2){
         if(argument2id.find(arg1) == argument2id.end()
         || argument2id.find(arg2) == argument2id.end()){
-            std::cout<<filename<<"文件格式错误"<<std::endl;
+            std::cout<<filename<<" file format error"<<std::endl;
             exit(1);
         }
         int id1 = argument2id[arg1],
@@ -297,36 +310,15 @@ bool Solver::is_legal_must_out(int arg) {
 }
 
 void Solver::init_label() {
-//    std::vector<int>blank_attack_count(arg_number, 0);
-//    std::queue<int> q;
-//    for (int i = 0; i < arg_number; ++i) {
-//        blank_attack_count[i] = (int)attack_by[i].size();
-//        if (blank_attack_count[i] == 0) q.push(i);
-//    }
-//    while(!q.empty()){
-//        auto arg = q.front();
-//        q.pop();
-//        label[arg] = LAB_IN;
-//        for(auto child: attack[arg]){
-//            label[arg] = LAB_OUT;
-//            for(auto child1:attack[child]){
-//                if (--blank_attack_count[child1] == 0){
-//                    q.push(child1);
-//                }
-//            }
-//        }
-//        for(auto parent:attack_by[arg]){
-//            auto lab = get_label(parent);
-//            label[arg] = LAB_MUST_OUT;
-//            for(auto pchild:attack[parent]){
-//                if (--blank_attack_count[pchild] == 0){
-//                    q.push(pchild);
-//                }
-//            }
-//        }
-//    }
+    // init arguments_to_label
     for(auto arg: args){
-        if (get_label(arg) == LAB_BLANK) arguments_to_label->insert(hval(arg), arg);
+        if(get_label(arg) == LAB_BLANK)arguments_to_label->insert(hval(arg), arg);
+    }
+
+    for (int i = 0; i < arg_number; ++i) {
+        if ((int)attack_by[i].size() == 0){
+            set_infer(i, LAB_IN, DECISION);
+        }
     }
 }
 
@@ -415,9 +407,12 @@ void Solver::add_clause(Clause &&clause) {
 }
 
 int Solver::clause_propagate() {
+#ifdef DEBUG
+    LOG("***** clause_propagate *****");
+#endif
     for(auto clause: clause_DB){
-        auto &clause_in = clause.get_in(arg_number),
-             &clause_out = clause.get_out(arg_number),
+        auto clause_in = clause.get_in(arg_number),
+             clause_out = clause.get_out(arg_number),
              clause_labeled = clause_in | clause_out,
              labeled = *in | *out;
 
@@ -427,16 +422,39 @@ int Solver::clause_propagate() {
             if ((clause_in & *in).count() + (clause_out & *out).count() != 0 ) continue;
             auto arg = (clause_labeled ^ (clause_labeled & labeled)).lowbit(),
                  lab = clause_in.get(arg) ? LAB_OUT : LAB_IN;
+#ifdef DEBUG
+            std::string msg("clause: ");
+            for(int i=0;i<clause.size();i++){
+                auto a = clause.get_arg(i),
+                     l = clause.get_sign(i);
+                msg += std::format("{}:{}, ", id2argument[a], label2char(l));
+            }
+            LOG(msg);
+#endif
             set_infer(arg, lab, clause.exclude(arg));
+            return NO_CONFLICT;
         }
         else if(labeled_count == 0) {
             auto diff_out = clause_in & *out,
                  diff_in = clause_out & *in;
             if (diff_in.count() + diff_out.count() > 0) continue;
             conflict = clause.collect_arg_as_list();
+#ifdef DEBUG
+            std::string msg("clause: ");
+            for(int i=0;i<clause.size();i++){
+                auto a = clause.get_arg(i),
+                        l = clause.get_sign(i);
+                msg += std::format("{}:{}, ", id2argument[a], label2char(l));
+            }
+            LOG(msg);
+            LOG("***** clause_propagate conflict *****\n");
+#endif
             return CONFLICT;
         }
     }
+#ifdef DEBUG
+    LOG("***** clause_propagate end *****\n");
+#endif
     return NO_CONFLICT;
 }
 

@@ -87,10 +87,12 @@ Bitset Bitset::operator|(const Bitset &other) {
 }
 
 int Bitset::lowbit() {
+    int res = 0;
     for(int i=0;i<arr_size;++i){
         if (bits[i]){
-            return __builtin_ctz(bits[i] & -bits[i]);
+            return res + __builtin_ctz(bits[i] & -bits[i]);
         }
+        res += WORD;
     }
     return -1;
 }

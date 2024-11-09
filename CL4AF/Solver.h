@@ -25,6 +25,7 @@
 #include <memory>
 #include <queue>
 #include <unordered_set>
+#include <format>
 
 #include "Heap.h"
 #include "Clause.h"
